@@ -36,7 +36,7 @@ class CoinSymbolNetworkMapping
                 $network = NetworkFactory::litecoin();
                 break;
             case 'doge':
-                $network = new DogeNetwork();
+                $network = NetworkFactory::dogecoin();
                 break;
             case 'dash':
                 $network = NetworkFactory::dash();
