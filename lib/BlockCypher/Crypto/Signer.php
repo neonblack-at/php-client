@@ -3,14 +3,16 @@
 namespace BlockCypher\Crypto;
 
 use BitWasp\Bitcoin\Bitcoin;
-use BitWasp\Bitcoin\Crypto\EcAdapter\EcAdapterInterface;
+use BitWasp\Bitcoin\Crypto\EcAdapter\Adapter\EcAdapterInterface;
+use BitWasp\Bitcoin\Crypto\EcAdapter\Impl\PhpEcc\Signature\Signature;
+use BitWasp\Bitcoin\Crypto\EcAdapter\Key\PrivateKeyInterface;
 use BitWasp\Bitcoin\Crypto\Random\Rfc6979;
-use BitWasp\Bitcoin\Key\PrivateKeyInterface;
 use BitWasp\Buffertools\Buffer;
 use BlockCypher\Validation\ArgumentArrayValidator;
 
 /**
  * Class Signer
+ *
  * @package BlockCypher\Crypto
  */
 class Signer
@@ -20,7 +22,9 @@ class Signer
      *
      * @param string[] $hexDataToSign
      * @param PrivateKeyInterface|string $privateKey
+     *
      * @return string[]
+     * @throws \Exception
      */
     public static function signMultiple($hexDataToSign, $privateKey)
     {
@@ -30,6 +34,7 @@ class Signer
         foreach ($hexDataToSign as $tosign) {
             $signatures[] = self::sign($tosign, $privateKey);
         }
+
         return $signatures;
     }
 
@@ -38,7 +43,9 @@ class Signer
      *
      * @param string $hexDataToSign
      * @param PrivateKeyInterface|string $privateKey
+     *
      * @return string
+     * @throws \Exception
      */
     public static function sign($hexDataToSign, $privateKey)
     {
@@ -53,16 +60,59 @@ class Signer
         $ecAdapter = Bitcoin::getEcAdapter();
 
         // Deterministic digital signature generation
-        $k = new Rfc6979($ecAdapter, $privateKey, $data, 'sha256');
-
-        $sig = $ecAdapter->sign($data, $privateKey, $k);
-
-        // DEBUG
-        //echo "hexDataToSign: <br/>";
-        //var_dump($hexDataToSign);
-        //echo "sig: <br/>";
-        //var_dump($sig->getHex());
+        $sig = self::_sign($data, $privateKey, $ecAdapter);
 
         return $sig->getHex();
+    }
+
+    /**
+     * @param Buffer $data
+     * @param PrivateKeyInterface|string $privateKey
+     * @param EcAdapterInterface $ecAdapter
+     *
+     * @return Signature
+     */
+    protected static function _sign($data, $privateKey, $ecAdapter)
+    {
+        $rbg = new Rfc6979($ecAdapter, $privateKey, $data, 'sha256');
+
+        $randomK = $rbg->bytes(32);
+        $math = $ecAdapter->getMath();
+        $generator = $ecAdapter->getGenerator();
+
+        $n = $generator->getOrder();
+        $k = $math->mod($randomK->getGmp(), $n);
+        $r = $generator->mul($k)->getX();
+
+        if ($math->cmp($r, gmp_init(0, 10)) == 0) {
+            throw new \RuntimeException('Random number r = 0');
+        }
+
+        $s = $math->mod(
+            $math->mul(
+                $math->inverseMod($k, $n),
+                $math->mod(
+                    $math->add(
+                        $data->getGmp(),
+                        $math->mul(
+                            $privateKey->getSecret(),
+                            $r
+                        )
+                    ),
+                    $n
+                )
+            ),
+            $n
+        );
+
+        if ($math->cmp($s, gmp_init(0, 10)) == 0) {
+            throw new \RuntimeException('Signature s = 0');
+        }
+
+        if (!$ecAdapter->validateSignatureElement($s, true)) {
+            $s = $math->sub($n, $s);
+        }
+
+        return new Signature($ecAdapter, $r, $s);
     }
 }
