@@ -20,7 +20,7 @@ class ModelAccessorValidator
      * @param string $attributeName Attribute name
      * @return bool
      */
-    public static function validate(BlockCypherModel $class, $attributeName)
+    public static function validate($class, $attributeName)
     {
         $mode = BlockCypherConfigManager::getInstance()->get('validation.level');
 
