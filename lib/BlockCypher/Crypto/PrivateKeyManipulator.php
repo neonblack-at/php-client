@@ -2,8 +2,9 @@
 
 namespace BlockCypher\Crypto;
 
-use BitWasp\Bitcoin\Key\PrivateKeyFactory;
-use BitWasp\Bitcoin\Key\PrivateKeyInterface;
+use BitWasp\Bitcoin\Address\PayToPubKeyHashAddress;
+use BitWasp\Bitcoin\Key\Factory\PrivateKeyFactory;
+use BitWasp\Bitcoin\Crypto\EcAdapter\Key\PrivateKeyInterface;
 use BlockCypher\Exception\BlockCypherInvalidPrivateKeyException;
 use BlockCypher\Validation\CoinSymbolValidator;
 
@@ -24,9 +25,10 @@ class PrivateKeyManipulator
 
         // TODO: Code Review. Method to detect private key format.
 
+        $factory = new PrivateKeyFactory();
         if ($privateKey === null) {
             try {
-                $privateKey = PrivateKeyFactory::fromWif($plainPrivateKey);
+                $privateKey = $factory->fromWif($plainPrivateKey);
             } catch (\Exception $e) {
                 $extraMsg .= " Error trying to import from Wif: " . $e->getMessage();
             }
@@ -34,7 +36,7 @@ class PrivateKeyManipulator
 
         if ($privateKey === null) {
             try {
-                $privateKey = PrivateKeyFactory::fromHex($plainPrivateKey);
+                $privateKey = $factory->fromHexCompressed($plainPrivateKey);
             } catch (\Exception $e) {
                 $extraMsg .= " Error trying to import from Hex: " . $e->getMessage();
             }
@@ -65,7 +67,8 @@ class PrivateKeyManipulator
      */
     public static function generateHexPubKeyFromHexPrivKey($hexPrivateKey, $compressed = true)
     {
-        $privateKey = self::importPrivateKeyFromHex($hexPrivateKey, $compressed);
+        $factory = new PrivateKeyFactory();
+        $privateKey = $compressed ? $factory->fromHexCompressed($hexPrivateKey) : $factory->fromHexUncompressed($hexPrivateKey);
         $hexPublicKey = $privateKey->getPublicKey()->getHex();
         return $hexPublicKey;
     }
@@ -81,7 +84,8 @@ class PrivateKeyManipulator
         $privateKey = null;
 
         try {
-            $privateKey = PrivateKeyFactory::fromHex($hexPrivateKey, $compressed);
+            $factory = new PrivateKeyFactory();
+            $privateKey = $compressed ? $factory->fromHexCompressed($hexPrivateKey) : $factory->fromHexUncompressed($hexPrivateKey);
         } catch (\Exception $e) {
             throw new BlockCypherInvalidPrivateKeyException('Invalid private key format, hex expected.' . $e->getMessage());
         }
@@ -102,7 +106,8 @@ class PrivateKeyManipulator
         $network = CoinSymbolNetworkMapping::getNetwork($coinSymbol);
 
         $publicKey = $privateKey->getPublicKey();
-        $address = $publicKey->getAddress()->getAddress($network);
+        $hash = $publicKey->getPubKeyHash();
+        $address = (new PayToPubKeyHashAddress($hash))->getAddress($network);
 
         return $address;
     }
