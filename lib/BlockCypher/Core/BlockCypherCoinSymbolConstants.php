@@ -73,6 +73,28 @@ class BlockCypherCoinSymbolConstants
             "address_first_char_list" => array('X')
         ),
         array(
+            'coin_symbol' => 'eth',
+            'display_name' => 'Etherheum',
+            'display_shortname' => 'Etherheum',
+            'blockcypher_code' => 'eth',
+            'blockcypher_network' => 'main',
+            'currency_abbrev' => 'ETH',
+            'pow' => 'sha',
+            'example_address' => '0x100b1de9d5157d457f30450bf123342e1c23aeff',
+            "address_first_char_list" => array('0')
+        ),
+        array(
+            'coin_symbol' => 'beth',
+            'display_name' => 'Etherheum Testnet',
+            'display_shortname' => 'Etherheum',
+            'blockcypher_code' => 'beth',
+            'blockcypher_network' => 'test',
+            'currency_abbrev' => 'ETH',
+            'pow' => 'sha',
+            'example_address' => '0xf7601bedd7ba227511b184cb64d05a472305a59b',
+            "address_first_char_list" => array('0')
+        ),
+        array(
             'coin_symbol' => 'bcy',
             'display_name' => 'BlockCypher Testnet',
             'display_shortname' => 'BC Testnet',

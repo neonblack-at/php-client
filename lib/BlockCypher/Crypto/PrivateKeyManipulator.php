@@ -56,7 +56,9 @@ class PrivateKeyManipulator
      */
     public static function importPrivateKeyFromWif($wifPrivateKey)
     {
-        $privateKey = PrivateKeyFactory::fromWif($wifPrivateKey);
+        $factory = new PrivateKeyFactory();
+        $privateKey = $factory->fromWif($wifPrivateKey);
+
         return $privateKey;
     }
 

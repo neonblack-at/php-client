@@ -45,6 +45,14 @@ class CoinSymbolNetworkMapping
                 // not used for the time being
                 $network = new BcyNetwork();
                 break;
+            case 'eth':
+                // not used for the time being
+                $network = NetworkFactory::bitcoin();
+                break;
+            case 'beth':
+                // not used for the time being
+                $network = NetworkFactory::bitcoin();
+                break;
             default:
                 throw new \Exception("Unsupported coin symbol: $coinSymbol by php-client");
         }
